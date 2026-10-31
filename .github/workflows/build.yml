@@ -1,1 +1,46 @@
+name: Build ES110 Remote app
 
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack app folder
+        run: if [ -f app.zip ]; then unzip -o -q app.zip; fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk ES110-Remote.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ES110-Remote
+          path: ES110-Remote.apk
+
+      - name: Publish download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: ES110 Remote (build ${{ github.run_number }})
+          body: Download ES110-Remote.apk on your Android phone and open it to install.
+          files: ES110-Remote.apk
+          make_latest: true
